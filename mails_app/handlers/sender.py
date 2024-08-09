@@ -1,21 +1,21 @@
+import asyncio
+from dotenv import load_dotenv
+import os
+
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.types import Message
 from aiogram import Bot
-
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.utils.media_group import MediaGroupBuilder
-
 from aiogram.enums import ParseMode
-
 from aiogram.exceptions import TelegramRetryAfter
 
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from mails_app.database.requests import change_active
 
-import asyncio
 
-
-bot = Bot(token='7163892144:AAHxHW9ArXI1CJCb6370XVfrk7MAEJsy2IU')
+bot = Bot(token=os.getenv('TOKEN'))
 
 
 def generate_keyboard(

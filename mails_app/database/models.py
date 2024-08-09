@@ -23,7 +23,6 @@ class Chat(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     telegram_id: Mapped[str] = mapped_column(String(32))
     chat_name: Mapped[str] = mapped_column(String(32), nullable=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     
 
 

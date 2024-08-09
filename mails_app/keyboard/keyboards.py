@@ -7,6 +7,7 @@ main_kb = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Налаштування чатів')]
 ], resize_keyboard=True)
 
+
 def change_chats() -> InlineKeyboardBuilder:
     builder = InlineKeyboardBuilder()
     builder.row(
@@ -19,8 +20,8 @@ def change_chats() -> InlineKeyboardBuilder:
 def get_kb_confirm() -> InlineKeyboardBuilder:
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text='Відправити заре', callback_data='start'),
-        InlineKeyboardButton(text='Відміна', callback_data='cancel')
+        InlineKeyboardButton(text='Відправити ', callback_data='start'),
+        InlineKeyboardButton(text='Відміна ', callback_data='cancel')
     )
     return builder
 
@@ -39,5 +40,14 @@ def get_inline_confirm() -> InlineKeyboardBuilder:
     builder.row(
         InlineKeyboardButton(text='Повідомлення з кнопкою з посиланням', callback_data='message_with_inline'),
         InlineKeyboardButton(text='Повідомлення без кнопки з посиланням', callback_data='message_without_inline')
+    )
+    return builder
+
+
+def get_timer_confirm() -> InlineKeyboardBuilder:
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(text='Відправити по таймеру', callback_data='send_with_timer'),
+        InlineKeyboardButton(text='Відправити заре', callback_data='send_without_timer')
     )
     return builder

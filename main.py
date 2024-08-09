@@ -15,8 +15,15 @@ from mails_app.database.models import async_main
 load_dotenv()
 dp = Dispatcher()
 
+
 def set_middleware():
     dp.update.middleware(DataBaseSession(session_pool=AsyncSessionLocal))
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+)
 
 
 async def main():

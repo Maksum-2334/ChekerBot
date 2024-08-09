@@ -6,6 +6,7 @@ class CreateMessage(StatesGroup):
     get_photo = State()
     get_keyboard_text = State()
     get_keyboard_url = State()
+    sending_time = State()
     confirm_sender = State()
     
 
@@ -17,3 +18,6 @@ class AddChatState(StatesGroup):
 class DeletedChat(StatesGroup):
     waiting_for_chat_id = State()
     
+
+class SendTime(StatesGroup):
+    sending_time = State()

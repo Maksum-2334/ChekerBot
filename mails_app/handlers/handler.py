@@ -6,7 +6,7 @@ from aiogram.fsm.context import FSMContext
 
 from mails_app.handlers.commands import create_sender_handler
 from mails_app.handlers import callback as clb
-from mails_app.state.base import CreateMessage, AddChatState, DeletedChat
+from mails_app.state.base import CreateMessage, AddChatState, DeletedChat, SendTime
 from mails_app.handlers import sender
 from mails_app.keyboard import keyboards as kb
 from mails_app.database import requests as rq
@@ -19,7 +19,7 @@ m_router = Router()
 
 @m_router.message(CommandStart())
 async def start(message: Message):
-    await message.answer('Вас вітає бот розсилки оберіть дію ', reply_markup=kb.main_kb)
+    await message.answer('Вас вітає бот розсилки оберіть дію: ', reply_markup=kb.main_kb)
 
 
 @m_router.message(F.text == 'Почати розсилку')
@@ -49,59 +49,12 @@ async def adding_chat(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-@m_router.message(AddChatState.waiting_for_chat_name)
-async def process_chat_name(message: Message, state: FSMContext):
-    chat_name = message.text
-
-    await state.update_data(chat_name=chat_name)
-
-    await message.answer('Тепер введіть ID чату:')
-    await state.set_state(AddChatState.waiting_for_chat_id)
-
-
-@m_router.message(AddChatState.waiting_for_chat_id)
-async def process_chat_id(message: Message, state: FSMContext):
-    chat_id = int(message.text)
-    
-    #if not chat_id.isdigit():
-       # await message.answer('Введіть числовий ID чату')
-
-    chat_id = int(chat_id)
-
-    data = await state.get_data()
-    chat_name = data['chat_name']
-    
-    # Зберігаємо новий чат у базу даних
-    await rq.add_chat(chat_name=chat_name, telegram_id=chat_id)
-    
-    await message.answer(f"Чат '{chat_name}' з ID {chat_id} успішно додано.")
-    
-    # Скидаємо стан
-    await state.clear()
-
-
 @m_router.callback_query(F.data == 'deleted_chat')
 async def deleted_chat(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
     
     await callback.message.answer('Введіть ID чату для видалення:')
     await state.set_state(DeletedChat.waiting_for_chat_id)
-
-
-@m_router.message(DeletedChat.waiting_for_chat_id)
-async def process_delete_chat(message: Message, state: FSMContext):
-    chat_id = message.text
-
-    data = await state.get_data()
-    res = await rq.delete_chat(chat_id)
-    if res:
-
-        await message.answer(f'Чат {chat_id} було видалено.')
-    else:
-
-        await message.answer(f'Чат {chat_id} не знайдено')
-
-    await state.clear()
 
 
 @m_router.callback_query(F.data == 'cancel')
@@ -134,6 +87,17 @@ async def without_photo(callback: CallbackQuery, state: FSMContext):
     )
 
 
+@m_router.callback_query(F.data == 'send_without_timer')
+async def without_timer(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
+    await state.set_state(CreateMessage.confirm_sender)
+
+    await callback.message.answer(
+        text='Підтвердіть розсилку: ',
+        reply_markup=kb.get_kb_confirm().as_markup(),
+        parse_mode=ParseMode.MARKDOWN
+    )
+
 
 @m_router.callback_query(F.data == 'message_with_inline')
 async def with_inline(callback: CallbackQuery, state: FSMContext):
@@ -154,9 +118,61 @@ async def without_inline(callback: CallbackQuery, state: FSMContext):
     await state.update_data(message_id=message_id)
     
     await callback.message.answer(
-        text='*Повідомлення для розсилки сформоване!*\n\nЩоб почати, натисніть кнопку нижче',
-        reply_markup=kb.get_kb_confirm().as_markup(),
+        text='Оберіть чи відправляти повідомлення по таймеру: ',
+        reply_markup=kb.get_timer_confirm().as_markup(),
         parse_mode=ParseMode.MARKDOWN
     )
 
-    await state.set_state(CreateMessage.confirm_sender)
+
+@m_router.callback_query(F.data == 'send_with_timer')
+async def send_with_timer(callback: CallbackQuery, state: FSMContext):
+    await callback.message.edit_text('Відправте дату ')
+    await state.set_state(CreateMessage.sending_time)
+
+
+@m_router.message(AddChatState.waiting_for_chat_name)
+async def process_chat_name(message: Message, state: FSMContext):
+    chat_name = message.text
+
+    await state.update_data(chat_name=chat_name)
+
+    await message.answer('Тепер введіть ID чату:')
+    await state.set_state(AddChatState.waiting_for_chat_id)
+
+
+@m_router.message(AddChatState.waiting_for_chat_id)
+async def process_chat_id(message: Message, state: FSMContext):
+    chat_id = int(message.text)
+    chat_id = int(chat_id)
+
+    data = await state.get_data()
+    chat_name = data['chat_name']
+    
+    await rq.add_chat(chat_name=chat_name, telegram_id=chat_id)
+    
+    await message.answer(f"Чат '{chat_name}' з ID {chat_id} успішно додано.")
+    
+    await state.clear()
+
+
+@m_router.message(DeletedChat.waiting_for_chat_id)
+async def process_delete_chat(message: Message, state: FSMContext):
+    chat_id = message.text
+
+    data = await state.get_data()
+    res = await rq.delete_chat(chat_id)
+    if res:
+
+        await message.answer(f'Чат {chat_id} було видалено.')
+    else:
+
+        await message.answer(f'Чат {chat_id} не знайдено')
+
+    await state.clear()
+
+
+@m_router.message(CreateMessage.sending_time)
+async def sending_time(message: Message, state: FSMContext):
+    chat_id = message.text
+    await clb.start_sending_time(message, state, start_time_str=chat_id)
+
